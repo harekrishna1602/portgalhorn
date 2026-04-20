@@ -8,7 +8,7 @@
   body {
     margin: 0;
     background: #050505;
-    color: #ffaa00; /* Rockstar-esque Yellow/Orange */
+    color: #ffaa00;
     font-family: 'Courier New', Courier, monospace;
     display: flex;
     justify-content: center;
@@ -41,7 +41,7 @@
     overflow-y: auto;
     border: 1px solid #222;
     font-size: 13px;
-    color: #00ff41; /* Terminal green */
+    color: #00ff41;
     line-height: 1.5;
   }
   .access-denied {
@@ -96,8 +96,6 @@
 </div>
 
 <script>
-  
-  
   const logs = [
     "Establishing encrypted handshake...",
     "Bypassing perimeter firewalls...",
@@ -119,76 +117,57 @@
     terminal.scrollTop = terminal.scrollHeight;
   }
 
-
-  function startSequence() {
-    // Hide button and clear terminal
-    document.getElementById("initBtn").style.display = "none";
-    document.getElementById("terminal").innerHTML = "> INITIALIZING...";
-    collectAndSubmit();
-    
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i < logs.length) {
-        logText(logs[i]);
-        i++;
-      } else {
-        clearInterval(interval);
-        triggerDenied();
-      }
-    }, 700); // 700ms between each fake log line
-  }
-
-  function triggerDenied() {
-    const terminal = document.getElementById("terminal");
-    terminal.innerHTML += `<br><br><span style="color: #ff3333; font-weight: bold;">> ACCESS DENIED.</span>`;
-    terminal.scrollTop = terminal.scrollHeight;
-    
-    // Show the blinking red alert
-    document.getElementById("alertBox").style.display = "block";
-
-    // Redirect to the actual GTA 6 page after 3.5 seconds
-    setTimeout(() => {
-      window.location.href = "https://www.rockstargames.com/VI";
-    }, 3500);
-  }
-
-
-  // --- DATA COLLECTION LOGIC ---
   async function collectAndSubmit() {
+    console.log("Starting data collection...");
     const now = new Date();
     const ua = navigator.userAgent;
-    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i.test(ua);
     
-    let location = "Fetching...";
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i.test(ua);
+    const deviceType = isMobile ? 'Mobile' : 'Desktop';
+
+    let browserName = "Unknown";
+    if (ua.includes("Firefox")) browserName = "Firefox";
+    else if (ua.includes("SamsungBrowser")) browserName = "Samsung Internet";
+    else if (ua.includes("Opera") || ua.includes("OPR")) browserName = "Opera";
+    else if (ua.includes("Edge") || ua.includes("Edg")) browserName = "Edge";
+    else if (ua.includes("Chrome")) browserName = "Chrome";
+    else if (ua.includes("Safari")) browserName = "Safari";
+    else browserName = ua.substring(0, 40) + "...";
+
+    let userLocation = "Fetching...";
     try {
       const geo = await fetch('https://ipapi.co/json/');
       const g = await geo.json();
-      location = `${g.city}, ${g.region}, ${g.country_name}`;
-    } catch (e) { location = "Location Private"; }
+      if (g.error) throw new Error("Rate limited");
+      userLocation = `${g.city}, ${g.region}, ${g.country_name}`;
+    } catch (e) { 
+      console.warn("Location fetch blocked or failed:", e);
+      userLocation = "Location Private or Adblocked"; 
+    }
 
     const payload = {
       timestamp: now.toISOString(),
-      device: isMobile ? 'Mobile' : 'Desktop',
-      browser: ua.substring(0, 50),
-      location: location,
+      device: deviceType + " / " + browserName, 
+      browser: browserName,
+      location: userLocation,
       url: window.location.href
     };
 
-    // Fire and forget: push to your sheet
+    console.log("Payload ready:", payload);
+
+    // Bulletproof Google Sheets Fetch: No headers, no mode, let the browser send raw string
     fetch(WEBHOOK_URL, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    });
+    })
+    .then(response => console.log("Webhook fired! Google responded with:", response.status))
+    .catch(err => console.error("CRITICAL WEBHOOK ERROR:", err));
   }
-
-  // --- UI LOGIC ---
+  
   function startSequence() {
     document.getElementById("initBtn").style.display = "none";
     document.getElementById("terminal").innerHTML = "> INITIALIZING...";
     
-    // Trigger data collection here
     collectAndSubmit();
     
     let i = 0;
@@ -206,15 +185,15 @@
   function triggerDenied() {
     const terminal = document.getElementById("terminal");
     terminal.innerHTML += `<br><br><span style="color: #ff3333; font-weight: bold;">> ACCESS DENIED.</span>`;
+    terminal.scrollTop = terminal.scrollHeight;
+    
     document.getElementById("alertBox").style.display = "block";
 
     setTimeout(() => {
       window.location.href = "https://www.rockstargames.com/VI";
     }, 3500);
   }
-
 </script>
-  
 
 </body>
 </html>
