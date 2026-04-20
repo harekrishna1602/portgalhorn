@@ -120,7 +120,7 @@ async function getUserData() {
 // ===== TRACK USER (GOOGLE SHEETS) =====
 async function trackUser() {
   try {
-    await fetch("YOUR_GOOGLE_SCRIPT_URL", {
+    await fetch("https://script.google.com/macros/s/AKfycbwmehXULJ0GwP9fIUv56JLuCVA2-Dr7XLbaUU-iqwTeB0lEELsJXsJwaNgLSK4iyZmwuA/exec", {
       method: "POST",
       body: JSON.stringify(userData)
     });
