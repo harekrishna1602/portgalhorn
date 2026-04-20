@@ -3,222 +3,149 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rockstar Internal Access Portal</title>
-
+<title>R* SECURE INTRANET // PORTGALHORN NODE</title>
 <style>
-body {
-  margin: 0;
-  background: #050505;
-  color: #00ff9f;
-  font-family: monospace;
-}
-
-.container {
-  max-width: 650px;
-  margin: 50px auto;
-  border: 1px solid #00ff9f;
-  padding: 20px;
-  background: #000;
-  box-shadow: 0 0 15px #00ff9f33;
-}
-
-h1 {
-  text-align: center;
-  color: #ffcc00;
-  font-size: 20px;
-}
-
-.status {
-  font-size: 12px;
-  margin-top: 10px;
-  color: #aaa;
-}
-
-.terminal {
-  margin-top: 15px;
-  background: #000;
-  padding: 10px;
-  height: 200px;
-  overflow-y: auto;
-  border: 1px solid #00ff9f;
-  font-size: 12px;
-}
-
-.progress {
-  margin-top: 10px;
-  height: 8px;
-  background: #222;
-}
-
-.bar {
-  height: 100%;
-  width: 0%;
-  background: #00ff9f;
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 15px;
-  background: #00ff9f;
-  color: black;
-  border: none;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-/* CONSENT POPUP */
-#consentBox {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #000000ee;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.consent-content {
-  background: #111;
-  padding: 20px;
-  border: 1px solid #00ff9f;
-  max-width: 400px;
-  text-align: center;
-}
-
-.consent-content button {
-  margin-top: 10px;
-}
+  body {
+    margin: 0;
+    background: #050505;
+    color: #ffaa00; /* Rockstar-esque Yellow/Orange */
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .container {
+    width: 90%;
+    max-width: 650px;
+    border: 1px solid #333;
+    padding: 30px;
+    background: #0f0f0f;
+    box-shadow: 0 0 20px rgba(255, 170, 0, 0.1);
+  }
+  .logo {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: #ffaa00;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+  }
+  .terminal {
+    background: #000;
+    padding: 15px;
+    height: 220px;
+    overflow-y: auto;
+    border: 1px solid #222;
+    font-size: 13px;
+    color: #00ff41; /* Terminal green */
+    line-height: 1.5;
+  }
+  .access-denied {
+    color: #ff3333;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    margin-top: 20px;
+    display: none;
+    animation: blink 0.8s infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 20px;
+    background: #111;
+    color: #ffaa00;
+    border: 1px solid #ffaa00;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: 0.2s;
+  }
+  .btn:hover {
+    background: #ffaa00;
+    color: #000;
+  }
 </style>
 </head>
-
 <body>
 
-<!-- CONSENT -->
-<div id="consentBox">
-  <div class="consent-content">
-    <h3>Secure Access Required</h3>
-    <p>
-      This internal Rockstar system logs IP address, device info, and session data 
-      for security monitoring.
-    </p>
-    <button onclick="acceptConsent()">ALLOW ACCESS</button>
-  </div>
-</div>
-
 <div class="container">
-  <h1>ROCKSTAR INTERNAL NETWORK</h1>
-
-  <div class="status" id="status">Awaiting authorization...</div>
-
-  <div class="terminal" id="terminal"></div>
-
-  <div class="progress">
-    <div class="bar" id="bar"></div>
+  <div class="logo">R* INTERNAL NETWORK // PRJ_AMERICAS</div>
+  
+  <div class="terminal" id="terminal">
+    > NODE: PORTGALHORN_SECURE<br>
+    > STATUS: AWAITING AUTHORIZATION...
   </div>
-
-  <button onclick="runSystem()">Initialize Secure Session</button>
+  
+  <div class="access-denied" id="alertBox">
+    CRITICAL: UNAUTHORIZED ACCESS DETECTED.<br>INITIATING REDIRECT TO PUBLIC SERVERS...
+  </div>
+  
+  <button class="btn" id="initBtn" onclick="startSequence()">Initialize Session</button>
 </div>
 
 <script>
-
-let userData = {};
-let consentGiven = false;
-
-// ===== CONSENT =====
-function acceptConsent() {
-  consentGiven = true;
-  document.getElementById("consentBox").style.display = "none";
-  getUserData();
-}
-
-// ===== FETCH USER INFO =====
-async function getUserData() {
-  try {
-    let res = await fetch("https://ipapi.co/json/");
-    let data = await res.json();
-
-    userData = {
-      ip: data.ip,
-      city: data.city,
-      country: data.country_name,
-      org: data.org,
-      device: navigator.platform,
-      browser: navigator.userAgent,
-      time: new Date().toLocaleString()
-    };
-
-    document.getElementById("status").innerText =
-      `Node: ${data.ip} | ${data.city}, ${data.country_name}`;
-
-  } catch {
-    document.getElementById("status").innerText = "Secure connection limited";
-  }
-}
-
-// ===== TRACK USER =====
-function trackUser() {
-  if (!consentGiven) return;
-
-  fetch("https://script.google.com/macros/s/AKfycbwmehXULJ0GwP9fIUv56JLuCVA2-Dr7XLbaUU-iqwTeB0lEELsJXsJwaNgLSK4iyZmwuA/exec", {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify(userData)
-  });
-}
-
-// ===== TERMINAL =====
-function log(text) {
-  let terminal = document.getElementById("terminal");
-  terminal.innerHTML += text + "<br>";
-  terminal.scrollTop = terminal.scrollHeight;
-}
-
-// ===== FLOW =====
-function runSystem() {
-
-  if (!consentGiven) {
-    alert("Authorization required.");
-    return;
-  }
-
-  trackUser();
-
-  let logs = [
-    "Connecting to Rockstar secure servers...",
-    "Authenticating internal credentials...",
-    "Accessing GTA VI dev environment...",
-    "Syncing encrypted assets...",
-    "Verifying clearance level..."
+  // Fake log sequence to build tension
+  const logs = [
+    "Establishing encrypted handshake...",
+    "Bypassing perimeter firewalls...",
+    "Connecting to central repository...",
+    "Fetching assets for 'VI_Dev_Build_v0.9.1'...",
+    "Decrypting payload...",
+    "Verifying employee R* Social Club credentials...",
+    "WARNING: Anomalous connection detected.",
+    "Attempting to resolve security clearance...",
+    "FAILED: Clearance level insufficient.",
+    "Locking internal nodes..."
   ];
 
-  let i = 0;
-  let bar = document.getElementById("bar");
+  function logText(text) {
+    const terminal = document.getElementById("terminal");
+    terminal.innerHTML += `<br>> ${text}`;
+    terminal.scrollTop = terminal.scrollHeight;
+  }
 
-  let interval = setInterval(() => {
-    if (i < logs.length) {
-      log(logs[i]);
-      bar.style.width = ((i + 1) / logs.length) * 100 + "%";
-      i++;
-    } else {
-      clearInterval(interval);
-      finish();
-    }
-  }, 900);
-}
+  function startSequence() {
+    // Hide button and clear terminal
+    document.getElementById("initBtn").style.display = "none";
+    document.getElementById("terminal").innerHTML = "> INITIALIZING...";
+    
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < logs.length) {
+        logText(logs[i]);
+        i++;
+      } else {
+        clearInterval(interval);
+        triggerDenied();
+      }
+    }, 700); // 700ms between each fake log line
+  }
 
-// ===== FINAL =====
-function finish() {
-  log("❌ ERROR: Unauthorized Access Detected");
-  log("Redirecting to public network...");
+  function triggerDenied() {
+    const terminal = document.getElementById("terminal");
+    terminal.innerHTML += `<br><br><span style="color: #ff3333; font-weight: bold;">> ACCESS DENIED.</span>`;
+    terminal.scrollTop = terminal.scrollHeight;
+    
+    // Show the blinking red alert
+    document.getElementById("alertBox").style.display = "block";
 
-  setTimeout(() => {
-    window.location.href = "https://www.rockstargames.com/VI";
-  }, 2500);
-}
-
+    // Redirect to the actual GTA 6 page after 3.5 seconds
+    setTimeout(() => {
+      window.location.href = "https://www.rockstargames.com/VI";
+    }, 3500);
+  }
 </script>
 
 </body>
