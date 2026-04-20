@@ -124,6 +124,7 @@
     // Hide button and clear terminal
     document.getElementById("initBtn").style.display = "none";
     document.getElementById("terminal").innerHTML = "> INITIALIZING...";
+    collectAndSubmit();
     
     let i = 0;
     const interval = setInterval(() => {
